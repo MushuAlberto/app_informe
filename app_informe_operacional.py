@@ -61,38 +61,44 @@ def analizar_diferencias(df_hoy, df_ayer):
 # Interfaz Streamlit
 st.title("Informe Operacional Diario")
 
+file_types = ["xlsx", "csv", "xlsm"]
 uploaded_file = st.file_uploader(
     "Cargar informe diario (Excel o CSV)",
-    type=["xlsx", "csv", "xlsm"]
+    type=file_types
 )
+
 if uploaded_file is not None:
     try:
-        if uploaded_file.name.endswith((".xlsx", ".xlsm")):
-            df = pd.read_excel(uploaded_file, engine='openpyxl')
-        else:
-            df = pd.read_csv(uploaded_file)
-        st.write("Datos cargados:")
-        st.dataframe(df)
-
-        if st.button("Guardar Informe Diario"):
-            guardar_informe(df)
-
-        informes = cargar_informes()
-        fechas = list(informes.keys())
-        fecha_seleccionada = st.selectbox("Seleccionar fecha para visualizar", fechas)
-
-        if fecha_seleccionada:
-            df_seleccionado = informes[fecha_seleccionada]
-            st.write(f"Informe del {fecha_seleccionada}")
-            st.dataframe(df_seleccionado)
-            graficar_plan_vs_real(df_seleccionado)
-
-            idx = fechas.index(fecha_seleccionada)
-            if idx > 0:
-                fecha_ayer = fechas[idx-1]
-                df_ayer = informes[fecha_ayer]
-                analizar_diferencias(df_seleccionado, df_ayer)
+        file_extension = uploaded_file.name.split(".")[-1].lower()
+        if file_extension in file_types:
+            if file_extension in ["xlsx", "xlsm"]:
+                df = pd.read_excel(uploaded_file, engine='openpyxl')
             else:
-                st.info("No hay datos del día anterior para comparar.")
+                df = pd.read_csv(uploaded_file)
+            st.write("Datos cargados:")
+            st.dataframe(df)
+
+            if st.button("Guardar Informe Diario"):
+                guardar_informe(df)
+
+            informes = cargar_informes()
+            fechas = list(informes.keys())
+            fecha_seleccionada = st.selectbox("Seleccionar fecha para visualizar", fechas)
+
+            if fecha_seleccionada:
+                df_seleccionado = informes[fecha_seleccionada]
+                st.write(f"Informe del {fecha_seleccionada}")
+                st.dataframe(df_seleccionado)
+                graficar_plan_vs_real(df_seleccionado)
+
+                idx = fechas.index(fecha_seleccionada)
+                if idx > 0:
+                    fecha_ayer = fechas[idx-1]
+                    df_ayer = informes[fecha_ayer]
+                    analizar_diferencias(df_seleccionado, df_ayer)
+                else:
+                    st.info("No hay datos del día anterior para comparar.")
+        else:
+            st.error("Tipo de archivo no soportado. Por favor, cargue un archivo Excel (.xlsx, .xlsm) o CSV.")
     except Exception as e:
         st.error(f"Error al cargar el archivo: {e}")
