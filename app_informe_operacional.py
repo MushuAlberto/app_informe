@@ -61,21 +61,27 @@ def analizar_diferencias(df_hoy, df_ayer):
 # Interfaz Streamlit
 st.title("Informe Operacional Diario")
 
-file_types = ["xlsx", "csv", "xlsm"]
 uploaded_file = st.file_uploader(
     "Cargar informe diario (Excel o CSV)",
-    type=file_types
+    type=["csv", "xlsx", "xlsm"]  # Keep the common Excel extensions for guidance
 )
 
 if uploaded_file is not None:
     try:
-        file_extension = uploaded_file.name.split(".")[-1].lower()
-        if file_extension in file_types:
-            if file_extension in ["xlsx", "xlsm"]:
-                df = pd.read_excel(uploaded_file, engine='openpyxl')
-            else:
+        # Use pandas to try to open the file as Excel
+        try:
+            excel_file = pd.ExcelFile(uploaded_file)
+            df = excel_file.parse(excel_file.sheet_names[0])  # Read the first sheet
+            st.write("Archivo Excel cargado correctamente (primera hoja):")
+        except Exception as e:
+            try:
                 df = pd.read_csv(uploaded_file)
-            st.write("Datos cargados:")
+                st.write("Archivo CSV cargado correctamente:")
+            except Exception as e:
+                st.error(f"No se pudo cargar el archivo ni como Excel ni como CSV. Error: {e}")
+                df = None
+
+        if df is not None:
             st.dataframe(df)
 
             if st.button("Guardar Informe Diario"):
@@ -98,7 +104,6 @@ if uploaded_file is not None:
                     analizar_diferencias(df_seleccionado, df_ayer)
                 else:
                     st.info("No hay datos del día anterior para comparar.")
-        else:
-            st.error("Tipo de archivo no soportado. Por favor, cargue un archivo Excel (.xlsx, .xlsm) o CSV.")
+
     except Exception as e:
-        st.error(f"Error al cargar el archivo: {e}")
+        st.error(f"Error general al cargar el archivo: {e}")
