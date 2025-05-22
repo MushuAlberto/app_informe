@@ -61,9 +61,9 @@ def analizar_diferencias(df_hoy, df_ayer):
 # Interfaz Streamlit
 st.title("Informe Operacional Diario")
 
-uploaded_file = st.file_uploader("Cargar informe diario (Excel o CSV)", type=['xlsx', 'csv'])
+uploaded_file = st.file_uploader("Cargar informe diario (Excel o CSV)", type=['xlsx', 'csv', 'xlsm'])
 if uploaded_file:
-    if uploaded_file.name.endswith('.xlsx'):
+    if uploaded_file.name.endswith(('.xlsx', '.xlsm')):
         df = pd.read_excel(uploaded_file)
     else:
         df = pd.read_csv(uploaded_file)
