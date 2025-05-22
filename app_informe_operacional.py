@@ -4,7 +4,6 @@ import os
 from datetime import datetime
 import plotly.graph_objects as go
 
-# Carpeta para almacenar informes
 DATA_DIR = "informes_historicos"
 os.makedirs(DATA_DIR, exist_ok=True)
 
@@ -58,52 +57,46 @@ def analizar_diferencias(df_hoy, df_ayer):
     else:
         st.info("La producción se mantuvo igual respecto al día anterior.")
 
-# Interfaz Streamlit
 st.title("Informe Operacional Diario")
 
-uploaded_file = st.file_uploader(
-    "Cargar informe diario (Excel o CSV)",
-    type=["csv", "xlsx", "xlsm"]  # Keep the common Excel extensions for guidance
-)
+# Sin filtro de tipo para que el selector muestre todos los archivos
+uploaded_file = st.file_uploader("Cargar informe diario (Excel o CSV)")
 
 if uploaded_file is not None:
     try:
-        # Use pandas to try to open the file as Excel
+        # Intentar leer como Excel
         try:
             excel_file = pd.ExcelFile(uploaded_file)
-            df = excel_file.parse(excel_file.sheet_names[0])  # Read the first sheet
+            df = excel_file.parse(excel_file.sheet_names[0])
             st.write("Archivo Excel cargado correctamente (primera hoja):")
-        except Exception as e:
-            try:
-                df = pd.read_csv(uploaded_file)
-                st.write("Archivo CSV cargado correctamente:")
-            except Exception as e:
-                st.error(f"No se pudo cargar el archivo ni como Excel ni como CSV. Error: {e}")
-                df = None
+        except Exception:
+            # Si falla, intentar leer como CSV
+            uploaded_file.seek(0)  # Resetear puntero del archivo
+            df = pd.read_csv(uploaded_file)
+            st.write("Archivo CSV cargado correctamente:")
 
-        if df is not None:
-            st.dataframe(df)
+        st.dataframe(df)
 
-            if st.button("Guardar Informe Diario"):
-                guardar_informe(df)
+        if st.button("Guardar Informe Diario"):
+            guardar_informe(df)
 
-            informes = cargar_informes()
-            fechas = list(informes.keys())
-            fecha_seleccionada = st.selectbox("Seleccionar fecha para visualizar", fechas)
+        informes = cargar_informes()
+        fechas = list(informes.keys())
+        fecha_seleccionada = st.selectbox("Seleccionar fecha para visualizar", fechas)
 
-            if fecha_seleccionada:
-                df_seleccionado = informes[fecha_seleccionada]
-                st.write(f"Informe del {fecha_seleccionada}")
-                st.dataframe(df_seleccionado)
-                graficar_plan_vs_real(df_seleccionado)
+        if fecha_seleccionada:
+            df_seleccionado = informes[fecha_seleccionada]
+            st.write(f"Informe del {fecha_seleccionada}")
+            st.dataframe(df_seleccionado)
+            graficar_plan_vs_real(df_seleccionado)
 
-                idx = fechas.index(fecha_seleccionada)
-                if idx > 0:
-                    fecha_ayer = fechas[idx-1]
-                    df_ayer = informes[fecha_ayer]
-                    analizar_diferencias(df_seleccionado, df_ayer)
-                else:
-                    st.info("No hay datos del día anterior para comparar.")
+            idx = fechas.index(fecha_seleccionada)
+            if idx > 0:
+                fecha_ayer = fechas[idx-1]
+                df_ayer = informes[fecha_ayer]
+                analizar_diferencias(df_seleccionado, df_ayer)
+            else:
+                st.info("No hay datos del día anterior para comparar.")
 
     except Exception as e:
-        st.error(f"Error general al cargar el archivo: {e}")
+        st.error(f"Error al cargar el archivo: {e}")
